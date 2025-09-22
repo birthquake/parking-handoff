@@ -1,8 +1,12 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import Navigation from '../Navigation/Navigation';
 
 const Dashboard = ({ user }) => {
   return (
     <div className="min-h-screen bg-gray-50">
+      <Navigation user={user} />
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="py-6">
           <h1 className="text-3xl font-bold text-gray-900">
@@ -22,9 +26,12 @@ const Dashboard = ({ user }) => {
             <p className="text-gray-600 mb-4">
               Find available parking spots near you from other drivers.
             </p>
-            <button className="btn btn-primary w-full">
+            <Link 
+              to="/find-spots"
+              className="btn btn-primary w-full block text-center"
+            >
               Find Spots
-            </button>
+            </Link>
           </div>
 
           {/* Post Spot Card */}
@@ -35,9 +42,12 @@ const Dashboard = ({ user }) => {
             <p className="text-gray-600 mb-4">
               Leaving soon? Post your parking spot for others to take over.
             </p>
-            <button className="btn btn-success w-full">
+            <Link 
+              to="/post-spot"
+              className="btn btn-success w-full block text-center"
+            >
               Post Spot
-            </button>
+            </Link>
           </div>
         </div>
 

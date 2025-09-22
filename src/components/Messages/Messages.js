@@ -67,12 +67,9 @@ const Messages = ({ user }) => {
       return;
     }
 
-    const messagesQuery = query(
-      collection(db, `${COLLECTIONS.MESSAGES}/${selectedConversation.id}/messages`),
-      orderBy('createdAt', 'asc')
-    );
+    const messagesCollectionRef = collection(db, `${COLLECTIONS.MESSAGES}/${selectedConversation.id}/messages`);
 
-    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+    const unsubscribe = onSnapshot(messagesCollectionRef, (snapshot) => {
       const messagesData = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
@@ -82,6 +79,10 @@ const Messages = ({ user }) => {
           createdAt: data.createdAt?.toDate()
         });
       });
+      
+      // Sort by creation time (oldest first)
+      messagesData.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+      
       setMessages(messagesData);
     });
 

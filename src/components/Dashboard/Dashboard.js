@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db, COLLECTIONS } from '../../firebase/config';
 import { format, formatDistanceToNow } from 'date-fns';
 import Navigation from '../Navigation/Navigation';
@@ -11,53 +11,48 @@ const Dashboard = ({ user }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get spots posted by this user
-    const userSpotsQuery = query(
-      collection(db, COLLECTIONS.SPOTS),
-      where('ownerId', '==', user.uid),
-      orderBy('createdAt', 'desc')
-    );
+    // Get all spots and filter in JavaScript to avoid index requirements
+    const allSpotsQuery = collection(db, COLLECTIONS.SPOTS);
 
-    const unsubscribeUserSpots = onSnapshot(userSpotsQuery, (snapshot) => {
-      const spots = [];
+    const unsubscribe = onSnapshot(allSpotsQuery, (snapshot) => {
+      const userPostedSpots = [];
+      const userReservedSpots = [];
+      
       snapshot.forEach((doc) => {
         const data = doc.data();
-        spots.push({
+        const spot = {
           id: doc.id,
           ...data,
           availableAt: data.availableAt?.toDate(),
-          createdAt: data.createdAt?.toDate()
-        });
+          createdAt: data.createdAt?.toDate(),
+          reservedAt: data.reservedAt?.toDate(),
+          updatedAt: data.updatedAt?.toDate()
+        };
+        
+        // Filter spots posted by this user
+        if (spot.ownerId === user.uid) {
+          userPostedSpots.push(spot);
+        }
+        
+        // Filter spots reserved by this user
+        if (spot.reservedBy === user.uid) {
+          userReservedSpots.push(spot);
+        }
       });
-      setUserSpots(spots);
-    });
-
-    // Get spots reserved by this user
-    const reservedSpotsQuery = query(
-      collection(db, COLLECTIONS.SPOTS),
-      where('reservedBy', '==', user.uid),
-      orderBy('updatedAt', 'desc')
-    );
-
-    const unsubscribeReservedSpots = onSnapshot(reservedSpotsQuery, (snapshot) => {
-      const spots = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        spots.push({
-          id: doc.id,
-          ...data,
-          availableAt: data.availableAt?.toDate(),
-          reservedAt: data.reservedAt?.toDate()
-        });
-      });
-      setReservedSpots(spots);
+      
+      // Sort by creation date (newest first)
+      userPostedSpots.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      userReservedSpots.sort((a, b) => (b.reservedAt || b.updatedAt || 0) - (a.reservedAt || a.updatedAt || 0));
+      
+      setUserSpots(userPostedSpots);
+      setReservedSpots(userReservedSpots);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching dashboard data:', error);
       setLoading(false);
     });
 
-    return () => {
-      unsubscribeUserSpots();
-      unsubscribeReservedSpots();
-    };
+    return () => unsubscribe();
   }, [user.uid]);
 
   const getStatusColor = (status) => {

@@ -17,11 +17,8 @@ const SpotFinder = ({ user }) => {
 
   // Real-time listener for available spots
   useEffect(() => {
-    const spotsQuery = query(
-      collection(db, COLLECTIONS.SPOTS),
-      where('status', '==', 'available'),
-      orderBy('createdAt', 'desc')
-    );
+    // Simple query - just get all spots and filter in JavaScript
+    const spotsQuery = collection(db, COLLECTIONS.SPOTS);
 
     const unsubscribe = onSnapshot(spotsQuery, (snapshot) => {
       const spotsData = [];
@@ -36,20 +33,20 @@ const SpotFinder = ({ user }) => {
           expiresAt: data.expiresAt?.toDate()
         };
         
-        // Filter out past spots in JavaScript instead of Firestore query
-        if (spot.availableAt && spot.availableAt > new Date()) {
+        // Filter in JavaScript: only available spots that are in the future
+        if (spot.status === 'available' && spot.availableAt && spot.availableAt > new Date()) {
           spotsData.push(spot);
         }
       });
       
-      // Sort by availableAt
+      // Sort by availableAt (earliest first)
       spotsData.sort((a, b) => a.availableAt - b.availableAt);
       
       setSpots(spotsData);
       setLoading(false);
     }, (error) => {
       console.error('Error fetching spots:', error);
-      setError('Failed to load parking spots');
+      setError(`Failed to load parking spots: ${error.message}`);
       setLoading(false);
     });
 

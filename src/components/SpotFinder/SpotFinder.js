@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db, COLLECTIONS } from '../../firebase/config';
 import { formatDistanceToNow, format } from 'date-fns';
 import Navigation from '../Navigation/Navigation';
@@ -17,13 +17,19 @@ const SpotFinder = ({ user }) => {
 
   // Real-time listener for available spots
   useEffect(() => {
+    console.log('Setting up Firestore listener...');
+    
     // Simple query - just get all spots and filter in JavaScript
     const spotsQuery = collection(db, COLLECTIONS.SPOTS);
 
     const unsubscribe = onSnapshot(spotsQuery, (snapshot) => {
+      console.log('Firestore snapshot received, docs count:', snapshot.size);
+      
       const spotsData = [];
       snapshot.forEach((doc) => {
+        console.log('Processing doc:', doc.id, doc.data());
         const data = doc.data();
+        
         // Convert Firestore timestamps to JS dates
         const spot = {
           id: doc.id,
@@ -33,11 +39,18 @@ const SpotFinder = ({ user }) => {
           expiresAt: data.expiresAt?.toDate()
         };
         
+        console.log('Processed spot:', spot);
+        
         // Filter in JavaScript: only available spots that are in the future
         if (spot.status === 'available' && spot.availableAt && spot.availableAt > new Date()) {
           spotsData.push(spot);
+          console.log('Added spot to list:', spot.id);
+        } else {
+          console.log('Filtered out spot:', spot.id, 'status:', spot.status, 'availableAt:', spot.availableAt);
         }
       });
+      
+      console.log('Final spots data:', spotsData);
       
       // Sort by availableAt (earliest first)
       spotsData.sort((a, b) => a.availableAt - b.availableAt);
@@ -45,7 +58,7 @@ const SpotFinder = ({ user }) => {
       setSpots(spotsData);
       setLoading(false);
     }, (error) => {
-      console.error('Error fetching spots:', error);
+      console.error('Firestore error details:', error);
       setError(`Failed to load parking spots: ${error.message}`);
       setLoading(false);
     });
@@ -58,8 +71,10 @@ const SpotFinder = ({ user }) => {
     setError('');
 
     try {
+      const spot = spots.find(s => s.id === spotId);
       const spotRef = doc(db, COLLECTIONS.SPOTS, spotId);
       
+      // Update spot status
       await updateDoc(spotRef, {
         status: 'reserved',
         reservedBy: user.uid,
@@ -67,8 +82,21 @@ const SpotFinder = ({ user }) => {
         updatedAt: serverTimestamp()
       });
 
-      // Note: In a real app, you'd also create a transaction/handoff record
-      // and initiate messaging between the users
+      // Create conversation between spot owner and reserver
+      await addDoc(collection(db, COLLECTIONS.MESSAGES), {
+        participants: [spot.ownerId, user.uid],
+        spotId: spotId,
+        spotAddress: spot.address,
+        spotPrice: spot.price,
+        createdAt: serverTimestamp(),
+        lastMessageAt: serverTimestamp(),
+        lastMessage: `${user.email} has reserved your parking spot at ${spot.address}`,
+        lastMessageSender: 'system'
+      });
+
+      // Add initial system message
+      // Note: We'll need to get the conversation ID to add the message
+      // For now, this creates the conversation - we can enhance this later
       
     } catch (error) {
       console.error('Error reserving spot:', error);

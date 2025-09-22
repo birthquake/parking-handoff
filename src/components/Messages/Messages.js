@@ -14,7 +14,6 @@ const Messages = ({ user }) => {
 
   // Load conversations where user is participant
   useEffect(() => {
-    // Simple query to avoid index requirements
     const conversationsQuery = collection(db, COLLECTIONS.MESSAGES);
 
     const unsubscribe = onSnapshot(conversationsQuery, async (snapshot) => {
@@ -23,9 +22,7 @@ const Messages = ({ user }) => {
       for (const docSnap of snapshot.docs) {
         const data = docSnap.data();
         
-        // Filter in JavaScript instead of Firestore query
         if (data.participants && data.participants.includes(user.uid)) {
-          // Get the other participant's info
           const otherParticipantId = data.participants.find(id => id !== user.uid);
           let otherParticipant = null;
           
@@ -47,9 +44,7 @@ const Messages = ({ user }) => {
         }
       }
 
-      // Sort by last message time (newest first)
       conversationsData.sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0));
-
       setConversations(conversationsData);
       setLoading(false);
     }, (error) => {
@@ -80,9 +75,7 @@ const Messages = ({ user }) => {
         });
       });
       
-      // Sort by creation time (oldest first)
       messagesData.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-      
       setMessages(messagesData);
     });
 
@@ -95,7 +88,6 @@ const Messages = ({ user }) => {
 
     setSending(true);
     try {
-      // Add message to subcollection
       await addDoc(collection(db, `${COLLECTIONS.MESSAGES}/${selectedConversation.id}/messages`), {
         text: newMessage.trim(),
         senderId: user.uid,
@@ -103,7 +95,6 @@ const Messages = ({ user }) => {
         createdAt: serverTimestamp()
       });
 
-      // Update the existing conversation document with last message info
       const conversationRef = doc(db, COLLECTIONS.MESSAGES, selectedConversation.id);
       await updateDoc(conversationRef, {
         lastMessage: newMessage.trim(),
@@ -123,7 +114,7 @@ const Messages = ({ user }) => {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navigation user={user} />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="container py-responsive">
           <div className="text-center">
             <div className="loading-spinner mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading conversations...</p>
@@ -137,273 +128,171 @@ const Messages = ({ user }) => {
     <div className="min-h-screen bg-gray-50">
       <Navigation user={user} />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="py-6">
-          <h1 className="text-3xl font-bold text-gray-900">Messages</h1>
-          <p className="mt-2 text-gray-600">
+      <div className="container">
+        <div className="py-responsive">
+          <h1 className="text-responsive-xl font-bold text-gray-900">Messages</h1>
+          <p className="mt-2 text-gray-600 text-sm">
             Coordinate parking spot handoffs with other users.
           </p>
         </div>
 
+        {/* Mobile Layout - Full Screen */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          {/* Mobile: Single column stack */}
-          <div className="block md:hidden">
-            {!selectedConversation ? (
-              /* Conversations List - Mobile */
-              <div>
-                <div className="p-4 border-b border-gray-200">
-                  <h2 className="text-lg font-medium text-gray-900">Conversations</h2>
-                </div>
-                
-                <div className="max-h-96 overflow-y-auto">
-                  {conversations.length === 0 ? (
-                    <div className="p-4 text-center text-gray-500">
-                      <p>No conversations yet.</p>
-                      <p className="text-sm mt-1">Messages will appear when you reserve spots.</p>
-                    </div>
-                  ) : (
-                    conversations.map((conversation) => (
-                      <div
-                        key={conversation.id}
-                        onClick={() => setSelectedConversation(conversation)}
-                        className="p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h3 className="font-medium text-gray-900">
-                              {conversation.otherParticipant?.name || conversation.otherParticipant?.email || 'Unknown User'}
-                            </h3>
-                            <p className="text-sm text-gray-600 truncate">
-                              {conversation.spotAddress}
-                            </p>
-                            {conversation.lastMessage && (
-                              <p className="text-sm text-gray-500 truncate mt-1">
-                                {conversation.lastMessage}
-                              </p>
-                            )}
-                          </div>
-                          <span className="text-xs text-gray-400">
-                            →
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            ) : (
-              /* Selected Conversation - Mobile */
-              <div className="flex flex-col h-screen max-h-screen">
-                {/* Back button and header */}
-                <div className="p-4 border-b border-gray-200 flex items-center">
-                  <button
-                    onClick={() => setSelectedConversation(null)}
-                    className="text-blue-600 mr-3"
-                  >
-                    ← Back
-                  </button>
-                  <div>
-                    <h3 className="font-medium text-gray-900">
-                      {selectedConversation.otherParticipant?.name || selectedConversation.otherParticipant?.email || 'Unknown User'}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      {selectedConversation.spotAddress}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-64">
-                  {messages.length === 0 ? (
-                    <div className="text-center text-gray-500">
-                      <p>Start the conversation!</p>
-                    </div>
-                  ) : (
-                    messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`flex ${message.senderId === user.uid ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div
-                          className={`max-w-xs px-3 py-2 rounded-lg text-sm ${
-                            message.senderId === user.uid
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-200 text-gray-900'
-                          }`}
-                        >
-                          <p className="break-words">{message.text}</p>
-                          {message.createdAt && (
-                            <p className={`text-xs mt-1 ${
-                              message.senderId === user.uid ? 'text-blue-100' : 'text-gray-500'
-                            }`}>
-                              {format(message.createdAt, 'h:mm a')}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                {/* Message Input */}
-                <form onSubmit={sendMessage} className="p-4 border-t border-gray-200">
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Type your message..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      disabled={sending}
-                    />
-                    <button
-                      type="submit"
-                      disabled={sending || !newMessage.trim()}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm touch-target"
-                    >
-                      Send
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-          </div>
-
-          {/* Desktop: Side by side layout */}
-          <div className="hidden md:flex h-96">
-            {/* Conversations List */}
-            <div className="w-1/3 border-r border-gray-200">
+          {!selectedConversation ? (
+            /* Conversations List - Mobile */
+            <div>
               <div className="p-4 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-900">Conversations</h2>
+                <h2 className="font-medium text-gray-900">Your Conversations</h2>
               </div>
               
-              <div className="overflow-y-auto h-full">
+              <div className="divide-y divide-gray-100">
                 {conversations.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">
-                    <p>No conversations yet.</p>
-                    <p className="text-sm mt-1">Messages will appear when you reserve spots.</p>
+                  <div className="p-8 text-center text-gray-500">
+                    <div className="text-4xl mb-4">💬</div>
+                    <p className="font-medium">No conversations yet</p>
+                    <p className="text-sm mt-1">Messages appear when you reserve spots or someone reserves yours.</p>
                   </div>
                 ) : (
                   conversations.map((conversation) => (
                     <div
                       key={conversation.id}
                       onClick={() => setSelectedConversation(conversation)}
-                      className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
-                        selectedConversation?.id === conversation.id ? 'bg-blue-50' : ''
-                      }`}
+                      className="p-4 cursor-pointer hover:bg-gray-50 active:bg-gray-100"
                     >
                       <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">
-                            {conversation.otherParticipant?.name || conversation.otherParticipant?.email || 'Unknown User'}
-                          </h3>
-                          <p className="text-sm text-gray-600 truncate">
-                            {conversation.spotAddress}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2">
+                            <h3 className="font-medium text-gray-900 truncate">
+                              {conversation.otherParticipant?.name || conversation.otherParticipant?.email || 'Unknown User'}
+                            </h3>
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          </div>
+                          <p className="text-sm text-gray-600 truncate mt-1">
+                            📍 {conversation.spotAddress}
                           </p>
                           {conversation.lastMessage && (
                             <p className="text-sm text-gray-500 truncate mt-1">
                               {conversation.lastMessage}
                             </p>
                           )}
+                          {conversation.lastMessageAt && (
+                            <p className="text-xs text-gray-400 mt-1">
+                              {format(conversation.lastMessageAt, 'MMM d, h:mm a')}
+                            </p>
+                          )}
                         </div>
-                        {conversation.lastMessageAt && (
-                          <span className="text-xs text-gray-400">
-                            {format(conversation.lastMessageAt, 'MMM d')}
-                          </span>
-                        )}
+                        <div className="ml-4 flex-shrink-0">
+                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
                       </div>
                     </div>
                   ))
                 )}
               </div>
             </div>
-
-            {/* Messages Area */}
-            <div className="flex-1 flex flex-col">
-              {selectedConversation ? (
-                <>
-                  <div className="p-4 border-b border-gray-200">
-                    <h3 className="font-medium text-gray-900">
+          ) : (
+            /* Selected Conversation - Mobile */
+            <div className="h-screen flex flex-col">
+              {/* Header */}
+              <div className="p-4 border-b border-gray-200 bg-white">
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => setSelectedConversation(null)}
+                    className="text-blue-600 hover:text-blue-700"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-gray-900 truncate">
                       {selectedConversation.otherParticipant?.name || selectedConversation.otherParticipant?.email || 'Unknown User'}
                     </h3>
-                    <p className="text-sm text-gray-600">
-                      Spot: {selectedConversation.spotAddress}
+                    <p className="text-sm text-gray-600 truncate">
+                      📍 {selectedConversation.spotAddress}
                     </p>
                   </div>
-
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {messages.length === 0 ? (
-                      <div className="text-center text-gray-500">
-                        <p>No messages yet. Start the conversation!</p>
-                      </div>
-                    ) : (
-                      messages.map((message) => (
-                        <div
-                          key={message.id}
-                          className={`flex ${message.senderId === user.uid ? 'justify-end' : 'justify-start'}`}
-                        >
-                          <div
-                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                              message.senderId === user.uid
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-200 text-gray-900'
-                            }`}
-                          >
-                            <p className="break-words">{message.text}</p>
-                            {message.createdAt && (
-                              <p className={`text-xs mt-1 ${
-                                message.senderId === user.uid ? 'text-blue-100' : 'text-gray-500'
-                              }`}>
-                                {format(message.createdAt, 'h:mm a')}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  <form onSubmit={sendMessage} className="p-4 border-t border-gray-200">
-                    <div className="flex space-x-2">
-                      <input
-                        type="text"
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Type your message..."
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        disabled={sending}
-                      />
-                      <button
-                        type="submit"
-                        disabled={sending || !newMessage.trim()}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm"
-                      >
-                        Send
-                      </button>
-                    </div>
-                  </form>
-                </>
-              ) : (
-                <div className="flex-1 flex items-center justify-center text-gray-500">
-                  <div className="text-center">
-                    <p className="text-sm">Select a conversation to start messaging</p>
-                  </div>
                 </div>
-              )}
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50" style={{height: 'calc(100vh - 200px)'}}>
+                {messages.length === 0 ? (
+                  <div className="text-center text-gray-500 py-8">
+                    <div className="text-3xl mb-2">👋</div>
+                    <p>Start the conversation!</p>
+                  </div>
+                ) : (
+                  messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.senderId === user.uid ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-xs px-4 py-2 rounded-2xl ${
+                          message.senderId === user.uid
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white text-gray-900 border border-gray-200'
+                        }`}
+                      >
+                        <p className="break-words">{message.text}</p>
+                        {message.createdAt && (
+                          <p className={`text-xs mt-1 ${
+                            message.senderId === user.uid ? 'text-blue-100' : 'text-gray-500'
+                          }`}>
+                            {format(message.createdAt, 'h:mm a')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Message Input */}
+              <div className="p-4 bg-white border-t border-gray-200">
+                <form onSubmit={sendMessage} className="flex space-x-2">
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type a message..."
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={sending}
+                  />
+                  <button
+                    type="submit"
+                    disabled={sending || !newMessage.trim()}
+                    className="w-12 h-12 bg-blue-600 text-white rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 flex items-center justify-center"
+                  >
+                    {sending ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                    )}
+                  </button>
+                </form>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Quick Tips */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="font-medium text-blue-900 mb-2">💡 Messaging Tips</h3>
-          <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Conversations start automatically when you reserve a spot</li>
-            <li>• Share your phone number for easier coordination</li>
-            <li>• Confirm the exact meeting location and time</li>
-            <li>• Be clear about any special instructions (license plate, car color, etc.)</li>
-          </ul>
-        </div>
+        {/* Tips Section */}
+        {!selectedConversation && (
+          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="font-medium text-blue-900 mb-2">💡 Messaging Tips</h3>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• Conversations start automatically when you reserve a spot</li>
+              <li>• Share your phone number for easier coordination</li>
+              <li>• Confirm the exact meeting location and time</li>
+              <li>• Be clear about any special instructions</li>
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );

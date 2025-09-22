@@ -8,6 +8,7 @@ import Login from './components/Auth/Login';
 import Dashboard from './components/Dashboard/Dashboard';
 import SpotFinder from './components/SpotFinder/SpotFinder';
 import PostSpot from './components/PostSpot/PostSpot';
+import MySpots from './components/MySpots/MySpots';
 import Profile from './components/Profile/Profile';
 import Messages from './components/Messages/Messages';
 import LoadingSpinner from './components/UI/LoadingSpinner';
@@ -82,6 +83,11 @@ function App() {
           <Route 
             path="/post-spot" 
             element={user ? <PostSpot user={user} /> : <Navigate to="/login" />} 
+          />
+          
+          <Route 
+            path="/my-spots" 
+            element={user ? <MySpots user={user} /> : <Navigate to="/login" />} 
           />
           
           <Route 

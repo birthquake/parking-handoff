@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { db, COLLECTIONS } from '../../firebase/config';
 import { format } from 'date-fns';
 import Navigation from '../Navigation/Navigation';
@@ -14,11 +14,8 @@ const Messages = ({ user }) => {
 
   // Load conversations where user is participant
   useEffect(() => {
-    const conversationsQuery = query(
-      collection(db, COLLECTIONS.MESSAGES),
-      where('participants', 'array-contains', user.uid),
-      orderBy('lastMessageAt', 'desc')
-    );
+    // Simple query to avoid index requirements
+    const conversationsQuery = collection(db, COLLECTIONS.MESSAGES);
 
     const unsubscribe = onSnapshot(conversationsQuery, async (snapshot) => {
       const conversationsData = [];
@@ -26,28 +23,37 @@ const Messages = ({ user }) => {
       for (const docSnap of snapshot.docs) {
         const data = docSnap.data();
         
-        // Get the other participant's info
-        const otherParticipantId = data.participants.find(id => id !== user.uid);
-        let otherParticipant = null;
-        
-        if (otherParticipantId) {
-          try {
-            const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, otherParticipantId));
-            otherParticipant = userDoc.exists() ? userDoc.data() : null;
-          } catch (error) {
-            console.error('Error fetching participant info:', error);
+        // Filter in JavaScript instead of Firestore query
+        if (data.participants && data.participants.includes(user.uid)) {
+          // Get the other participant's info
+          const otherParticipantId = data.participants.find(id => id !== user.uid);
+          let otherParticipant = null;
+          
+          if (otherParticipantId) {
+            try {
+              const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, otherParticipantId));
+              otherParticipant = userDoc.exists() ? userDoc.data() : null;
+            } catch (error) {
+              console.error('Error fetching participant info:', error);
+            }
           }
-        }
 
-        conversationsData.push({
-          id: docSnap.id,
-          ...data,
-          otherParticipant,
-          lastMessageAt: data.lastMessageAt?.toDate()
-        });
+          conversationsData.push({
+            id: docSnap.id,
+            ...data,
+            otherParticipant,
+            lastMessageAt: data.lastMessageAt?.toDate()
+          });
+        }
       }
 
+      // Sort by last message time (newest first)
+      conversationsData.sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0));
+
       setConversations(conversationsData);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error loading conversations:', error);
       setLoading(false);
     });
 
@@ -139,14 +145,14 @@ const Messages = ({ user }) => {
         </div>
 
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="flex h-96">
+          <div className="flex flex-col md:flex-row h-96 md:h-96">
             {/* Conversations List */}
-            <div className="w-1/3 border-r border-gray-200">
+            <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-gray-200">
               <div className="p-4 border-b border-gray-200">
                 <h2 className="text-lg font-medium text-gray-900">Conversations</h2>
               </div>
               
-              <div className="overflow-y-auto h-full">
+              <div className="overflow-y-auto h-48 md:h-full">
                 {conversations.length === 0 ? (
                   <div className="p-4 text-center text-gray-500">
                     <p>No conversations yet.</p>
@@ -188,7 +194,7 @@ const Messages = ({ user }) => {
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col h-48 md:h-full">
               {selectedConversation ? (
                 <>
                   {/* Conversation Header */}
@@ -220,7 +226,7 @@ const Messages = ({ user }) => {
                                 : 'bg-gray-200 text-gray-900'
                             }`}
                           >
-                            <p>{message.text}</p>
+                            <p className="break-words">{message.text}</p>
                             {message.createdAt && (
                               <p className={`text-xs mt-1 ${
                                 message.senderId === user.uid ? 'text-blue-100' : 'text-gray-500'
@@ -242,13 +248,13 @@ const Messages = ({ user }) => {
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         placeholder="Type your message..."
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                         disabled={sending}
                       />
                       <button
                         type="submit"
                         disabled={sending || !newMessage.trim()}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 text-sm"
                       >
                         {sending ? '...' : 'Send'}
                       </button>
@@ -258,7 +264,7 @@ const Messages = ({ user }) => {
               ) : (
                 <div className="flex-1 flex items-center justify-center text-gray-500">
                   <div className="text-center">
-                    <p>Select a conversation to start messaging</p>
+                    <p className="text-sm">Select a conversation to start messaging</p>
                   </div>
                 </div>
               )}

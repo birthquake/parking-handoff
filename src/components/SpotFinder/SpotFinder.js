@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db, COLLECTIONS } from '../../firebase/config';
 import { formatDistanceToNow, format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import Navigation from '../Navigation/Navigation';
 
 const SpotFinder = ({ user }) => {
@@ -9,25 +10,23 @@ const SpotFinder = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reservingSpot, setReservingSpot] = useState(null);
+  const [showRedirectMessage, setShowRedirectMessage] = useState(false);
   const [filters, setFilters] = useState({
     maxPrice: '',
     spotType: '',
     city: ''
   });
+  
+  const navigate = useNavigate();
 
   // Real-time listener for available spots
   useEffect(() => {
-    console.log('Setting up Firestore listener...');
-    
     // Simple query - just get all spots and filter in JavaScript
     const spotsQuery = collection(db, COLLECTIONS.SPOTS);
 
     const unsubscribe = onSnapshot(spotsQuery, (snapshot) => {
-      console.log('Firestore snapshot received, docs count:', snapshot.size);
-      
       const spotsData = [];
       snapshot.forEach((doc) => {
-        console.log('Processing doc:', doc.id, doc.data());
         const data = doc.data();
         
         // Convert Firestore timestamps to JS dates
@@ -39,18 +38,11 @@ const SpotFinder = ({ user }) => {
           expiresAt: data.expiresAt?.toDate()
         };
         
-        console.log('Processed spot:', spot);
-        
         // Filter in JavaScript: only available spots that are in the future
         if (spot.status === 'available' && spot.availableAt && spot.availableAt > new Date()) {
           spotsData.push(spot);
-          console.log('Added spot to list:', spot.id);
-        } else {
-          console.log('Filtered out spot:', spot.id, 'status:', spot.status, 'availableAt:', spot.availableAt);
         }
       });
-      
-      console.log('Final spots data:', spotsData);
       
       // Sort by availableAt (earliest first)
       spotsData.sort((a, b) => a.availableAt - b.availableAt);
@@ -94,9 +86,15 @@ const SpotFinder = ({ user }) => {
         lastMessageSender: 'system'
       });
 
-      // Note: Auto-redirect removed for now - will add back after build fixes
+      // Show success message and redirect to Messages after delay
+      setShowRedirectMessage(true);
       
-    } catch (error) {
+      setTimeout(() => {
+        setShowRedirectMessage(false);
+        navigate('/messages');
+      }, 1500);
+      
+    } catch (error) => {
       console.error('Error reserving spot:', error);
       setError('Failed to reserve spot. Please try again.');
     } finally {
@@ -241,6 +239,24 @@ const SpotFinder = ({ user }) => {
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
             {error}
+          </div>
+        )}
+
+        {/* Success/Redirect Message */}
+        {showRedirectMessage && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium">
+                  Spot reserved successfully! Redirecting to messages...
+                </p>
+              </div>
+            </div>
           </div>
         )}
 

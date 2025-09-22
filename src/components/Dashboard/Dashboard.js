@@ -69,23 +69,23 @@ const Dashboard = ({ user }) => {
     <div className="min-h-screen bg-gray-50">
       <Navigation user={user} />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="py-6">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {user?.displayName || user?.email}!
+      <div className="container">
+        <div className="py-responsive">
+          <h1 className="text-responsive-xl font-bold text-gray-900">
+            Welcome back!
           </h1>
           <p className="mt-2 text-gray-600">
             Find parking spots or post your own spot for handoff.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+        <div className="grid-responsive grid-responsive-2 mt-6">
           {/* Find Spots Card */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <div className="card-responsive">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">
               🔍 Find Parking Spots
             </h2>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 mb-4 text-sm">
               Find available parking spots near you from other drivers.
             </p>
             <Link 
@@ -97,11 +97,11 @@ const Dashboard = ({ user }) => {
           </div>
 
           {/* Post Spot Card */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <div className="card-responsive">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">
               📍 Post Your Spot
             </h2>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 mb-4 text-sm">
               Leaving soon? Post your parking spot for others to take over.
             </p>
             <Link 

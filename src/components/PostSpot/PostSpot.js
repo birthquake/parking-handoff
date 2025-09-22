@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, COLLECTIONS, APP_CONSTANTS } from '../../firebase/config';
+import Navigation from '../Navigation/Navigation';
 
 const PostSpot = ({ user }) => {
   const [formData, setFormData] = useState({
@@ -149,6 +150,8 @@ const PostSpot = ({ user }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Navigation user={user} />
+      
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="py-6">
           <h1 className="text-3xl font-bold text-gray-900">

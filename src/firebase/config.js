@@ -6,15 +6,13 @@ import { getStorage } from 'firebase/storage';
 import { getMessaging, isSupported } from 'firebase/messaging';
 
 // Your web app's Firebase configuration
-// Replace these with your actual Firebase config values
 const firebaseConfig = {
-  apiKey: "your-api-key-here",
-  authDomain: "your-project-id.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project-id.appspot.com",
-  messagingSenderId: "your-sender-id",
-  appId: "your-app-id",
-  measurementId: "your-measurement-id"
+  apiKey: "AIzaSyCQ2d_zN54DZRBmS_D9BvVm4GOYObeamCc",
+  authDomain: "parking-handoff.firebaseapp.com",
+  projectId: "parking-handoff",
+  storageBucket: "parking-handoff.firebasestorage.app",
+  messagingSenderId: "765641283874",
+  appId: "1:765641283874:web:4ffd8ec32755ca57f96d7b"
 };
 
 // Initialize Firebase

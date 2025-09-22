@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, COLLECTIONS, APP_CONSTANTS } from '../../firebase/config';
 import Navigation from '../Navigation/Navigation';
 
 const PostSpot = ({ user }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     address: '',
     city: '',
@@ -132,6 +134,11 @@ const PostSpot = ({ user }) => {
         spotType: 'street',
         duration: '30'
       });
+
+      // Redirect to dashboard after 2 seconds
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 2000);
 
     } catch (error) {
       console.error('Error posting spot:', error);

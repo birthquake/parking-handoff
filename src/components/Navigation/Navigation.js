@@ -1,10 +1,4 @@
-import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { signOut } from 'firebase/auth';
-import { auth } from '../../firebase/config';
-
-const Navigation = ({ user }) => {
-  const location = useLocation();aimport React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase/config';
@@ -12,6 +6,7 @@ import { auth } from '../../firebase/config';
 const Navigation = ({ user }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -26,92 +21,81 @@ const Navigation = ({ user }) => {
     return location.pathname === path;
   };
 
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+  };
+
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="container">
         <div className="flex justify-between h-16">
-          {/* Logo and main nav */}
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <Link to="/dashboard" className="text-2xl font-bold text-blue-600">
-                🚗 ParkingSpot
-              </Link>
-            </div>
-            
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <Link
-                to="/dashboard"
-                className={`${
-                  isActive('/dashboard')
-                    ? 'border-blue-500 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-              >
-                Dashboard
-              </Link>
-              
-              <Link
-                to="/find-spots"
-                className={`${
-                  isActive('/find-spots')
-                    ? 'border-blue-500 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-              >
-                Find Spots
-              </Link>
-              
-              <Link
-                to="/post-spot"
-                className={`${
-                  isActive('/post-spot')
-                    ? 'border-blue-500 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-              >
-                Post Spot
-              </Link>
-              
-              <Link
-                to="/my-spots"
-                className={`${
-                  isActive('/my-spots')
-                    ? 'border-blue-500 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-              >
-                My Spots
-              </Link>
-              
-              <Link
-                to="/messages"
-                className={`${
-                  isActive('/messages')
-                    ? 'border-blue-500 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-              >
-                Messages
-              </Link>
-            </div>
+          {/* Logo and hamburger */}
+          <div className="flex items-center">
+            <Link to="/dashboard" className="text-xl font-bold text-blue-600">
+              🚗 ParkingSpot
+            </Link>
           </div>
+          
+          {/* Desktop Navigation */}
+          <div className="nav-desktop-menu space-x-4 items-center">
+            <Link
+              to="/dashboard"
+              className={`px-3 py-2 rounded-md text-sm font-medium ${
+                isActive('/dashboard')
+                  ? 'text-blue-600 bg-blue-50'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Dashboard
+            </Link>
+            
+            <Link
+              to="/find-spots"
+              className={`px-3 py-2 rounded-md text-sm font-medium ${
+                isActive('/find-spots')
+                  ? 'text-blue-600 bg-blue-50'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Find Spots
+            </Link>
+            
+            <Link
+              to="/post-spot"
+              className={`px-3 py-2 rounded-md text-sm font-medium ${
+                isActive('/post-spot')
+                  ? 'text-blue-600 bg-blue-50'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Post Spot
+            </Link>
+            
+            <Link
+              to="/my-spots"
+              className={`px-3 py-2 rounded-md text-sm font-medium ${
+                isActive('/my-spots')
+                  ? 'text-blue-600 bg-blue-50'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              My Spots
+            </Link>
+            
+            <Link
+              to="/messages"
+              className={`px-3 py-2 rounded-md text-sm font-medium ${
+                isActive('/messages')
+                  ? 'text-blue-600 bg-blue-50'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Messages
+            </Link>
 
-          {/* User menu */}
-          <div className="flex items-center space-x-4">
             <span className="text-sm text-gray-700">
               {user?.email}
             </span>
-            
-            <Link
-              to="/profile"
-              className={`${
-                isActive('/profile')
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-500 hover:text-gray-700'
-              } px-3 py-2 rounded-md text-sm font-medium`}
-            >
-              Profile
-            </Link>
             
             <button
               onClick={handleSignOut}
@@ -120,233 +104,99 @@ const Navigation = ({ user }) => {
               Sign Out
             </button>
           </div>
-        </div>
-      </div>
 
-      {/* Mobile menu - you can expand this later */}
-      <div className="sm:hidden">
-        <div className="pt-2 pb-3 space-y-1">
-          <Link
-            to="/dashboard"
-            className={`${
-              isActive('/dashboard')
-                ? 'bg-blue-50 border-blue-500 text-blue-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}
-          >
-            Dashboard
-          </Link>
-          
-          <Link
-            to="/find-spots"
-            className={`${
-              isActive('/find-spots')
-                ? 'bg-blue-50 border-blue-500 text-blue-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}
-          >
-            Find Spots
-          </Link>
-          
-          <Link
-            to="/post-spot"
-            className={`${
-              isActive('/post-spot')
-                ? 'bg-blue-50 border-blue-500 text-blue-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}
-          >
-            Post Spot
-          </Link>
-          
-          <Link
-            to="/my-spots"
-            className={`${
-              isActive('/my-spots')
-                ? 'bg-blue-50 border-blue-500 text-blue-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}
-          >
-            My Spots
-          </Link>
-          
-          <Link
-            to="/messages"
-            className={`${
-              isActive('/messages')
-                ? 'bg-blue-50 border-blue-500 text-blue-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}
-          >
-            Messages
-          </Link>
-        </div>
-      </div>
-    </nav>
-  );
-};
-
-export default Navigation;
-  const navigate = useNavigate();
-
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      navigate('/login');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
-
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
-
-  return (
-    <nav className="bg-white shadow-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          {/* Logo and main nav */}
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <Link to="/dashboard" className="text-2xl font-bold text-blue-600">
-                🚗 ParkingSpot
-              </Link>
-            </div>
-            
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <Link
-                to="/dashboard"
-                className={`${
-                  isActive('/dashboard')
-                    ? 'border-blue-500 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-              >
-                Dashboard
-              </Link>
-              
-              <Link
-                to="/find-spots"
-                className={`${
-                  isActive('/find-spots')
-                    ? 'border-blue-500 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-              >
-                Find Spots
-              </Link>
-              
-              <Link
-                to="/post-spot"
-                className={`${
-                  isActive('/post-spot')
-                    ? 'border-blue-500 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-              >
-                Post Spot
-              </Link>
-              
-              <Link
-                to="/my-spots"
-                className={`${
-                  isActive('/my-spots')
-                    ? 'border-blue-500 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-              >
-                My Spots
-              </Link>
-              
-              <Link
-                to="/messages"
-                className={`${
-                  isActive('/messages')
-                    ? 'border-blue-500 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-              >
-                Messages
-              </Link>
-            </div>
-          </div>
-
-          {/* User menu */}
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-700">
-              {user?.email}
-            </span>
-            
-            <Link
-              to="/profile"
-              className={`${
-                isActive('/profile')
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-500 hover:text-gray-700'
-              } px-3 py-2 rounded-md text-sm font-medium`}
-            >
-              Profile
-            </Link>
-            
+          {/* Mobile menu button */}
+          <div className="nav-mobile-menu flex items-center">
             <button
-              onClick={handleSignOut}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="text-gray-500 hover:text-gray-700 p-2"
             >
-              Sign Out
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile menu - you can expand this later */}
-      <div className="sm:hidden">
-        <div className="pt-2 pb-3 space-y-1">
-          <Link
-            to="/dashboard"
-            className={`${
-              isActive('/dashboard')
-                ? 'bg-blue-50 border-blue-500 text-blue-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}
-          >
-            Dashboard
-          </Link>
-          
-          <Link
-            to="/find-spots"
-            className={`${
-              isActive('/find-spots')
-                ? 'bg-blue-50 border-blue-500 text-blue-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}
-          >
-            Find Spots
-          </Link>
-          
-          <Link
-            to="/post-spot"
-            className={`${
-              isActive('/post-spot')
-                ? 'bg-blue-50 border-blue-500 text-blue-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}
-          >
-            Post Spot
-          </Link>
-          
-          <Link
-            to="/messages"
-            className={`${
-              isActive('/messages')
-                ? 'bg-blue-50 border-blue-500 text-blue-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}
-          >
-            Messages
-          </Link>
+      {/* Mobile menu */}
+      {mobileMenuOpen && (
+        <div className="nav-mobile-menu border-t border-gray-200">
+          <div className="px-2 pt-2 pb-3 space-y-1">
+            <Link
+              to="/dashboard"
+              onClick={closeMobileMenu}
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                isActive('/dashboard')
+                  ? 'text-blue-600 bg-blue-50'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Dashboard
+            </Link>
+            
+            <Link
+              to="/find-spots"
+              onClick={closeMobileMenu}
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                isActive('/find-spots')
+                  ? 'text-blue-600 bg-blue-50'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Find Spots
+            </Link>
+            
+            <Link
+              to="/post-spot"
+              onClick={closeMobileMenu}
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                isActive('/post-spot')
+                  ? 'text-blue-600 bg-blue-50'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Post Spot
+            </Link>
+            
+            <Link
+              to="/my-spots"
+              onClick={closeMobileMenu}
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                isActive('/my-spots')
+                  ? 'text-blue-600 bg-blue-50'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              My Spots
+            </Link>
+            
+            <Link
+              to="/messages"
+              onClick={closeMobileMenu}
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                isActive('/messages')
+                  ? 'text-blue-600 bg-blue-50'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Messages
+            </Link>
+
+            <div className="border-t border-gray-200 pt-3 mt-3">
+              <div className="px-3 py-2 text-sm text-gray-500">
+                {user?.email}
+              </div>
+              <button
+                onClick={handleSignOut}
+                className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </nav>
   );
 };

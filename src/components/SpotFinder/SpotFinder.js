@@ -94,10 +94,7 @@ const SpotFinder = ({ user }) => {
         lastMessageSender: 'system'
       });
 
-      // Redirect to Messages page after successful reservation
-      setTimeout(() => {
-        navigate('/messages');
-      }, 1500);
+      // Note: Auto-redirect removed for now - will add back after build fixes
       
     } catch (error) {
       console.error('Error reserving spot:', error);

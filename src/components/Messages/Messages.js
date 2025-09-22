@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, COLLECTIONS } from '../../firebase/config';
 import { format } from 'date-fns';
 import Navigation from '../Navigation/Navigation';
@@ -103,9 +103,9 @@ const Messages = ({ user }) => {
         createdAt: serverTimestamp()
       });
 
-      // Update conversation's last message info
-      await addDoc(collection(db, COLLECTIONS.MESSAGES), {
-        ...selectedConversation,
+      // Update the existing conversation document with last message info
+      const conversationRef = doc(db, COLLECTIONS.MESSAGES, selectedConversation.id);
+      await updateDoc(conversationRef, {
         lastMessage: newMessage.trim(),
         lastMessageAt: serverTimestamp(),
         lastMessageSender: user.uid

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db, COLLECTIONS } from '../../firebase/config';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -94,7 +94,7 @@ const SpotFinder = ({ user }) => {
         navigate('/messages');
       }, 1500);
       
-    } catch (error) => {
+    } catch (error) {
       console.error('Error reserving spot:', error);
       setError('Failed to reserve spot. Please try again.');
     } finally {

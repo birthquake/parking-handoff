@@ -20,8 +20,7 @@ const SpotFinder = ({ user }) => {
     const spotsQuery = query(
       collection(db, COLLECTIONS.SPOTS),
       where('status', '==', 'available'),
-      where('availableAt', '>', new Date()), // Only future spots
-      orderBy('availableAt', 'asc')
+      orderBy('createdAt', 'desc')
     );
 
     const unsubscribe = onSnapshot(spotsQuery, (snapshot) => {
@@ -29,14 +28,22 @@ const SpotFinder = ({ user }) => {
       snapshot.forEach((doc) => {
         const data = doc.data();
         // Convert Firestore timestamps to JS dates
-        spotsData.push({
+        const spot = {
           id: doc.id,
           ...data,
           availableAt: data.availableAt?.toDate(),
           createdAt: data.createdAt?.toDate(),
           expiresAt: data.expiresAt?.toDate()
-        });
+        };
+        
+        // Filter out past spots in JavaScript instead of Firestore query
+        if (spot.availableAt && spot.availableAt > new Date()) {
+          spotsData.push(spot);
+        }
       });
+      
+      // Sort by availableAt
+      spotsData.sort((a, b) => a.availableAt - b.availableAt);
       
       setSpots(spotsData);
       setLoading(false);

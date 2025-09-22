@@ -57,11 +57,13 @@ const PostSpot = ({ user }) => {
       return false;
     }
 
-    // Check if time is in the future
+    // Check if time is in the future (with 5 minute buffer)
     const selectedTime = new Date(formData.availableAt);
     const now = new Date();
-    if (selectedTime <= now) {
-      setError('Available time must be in the future');
+    const fiveMinutesFromNow = new Date(now.getTime() + (5 * 60 * 1000));
+    
+    if (selectedTime < fiveMinutesFromNow) {
+      setError('Available time must be at least 5 minutes from now');
       return false;
     }
 
@@ -138,10 +140,10 @@ const PostSpot = ({ user }) => {
     }
   };
 
-  // Generate default time (30 minutes from now)
-  const getDefaultTime = () => {
+  // Generate minimum time (5 minutes from now)
+  const getMinTime = () => {
     const now = new Date();
-    now.setMinutes(now.getMinutes() + 30);
+    now.setMinutes(now.getMinutes() + 5);
     return now.toISOString().slice(0, 16); // Format for datetime-local input
   };
 
@@ -265,7 +267,7 @@ const PostSpot = ({ user }) => {
                     required
                     value={formData.availableAt}
                     onChange={handleInputChange}
-                    min={new Date().toISOString().slice(0, 16)}
+                    min={getMinTime()}
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>

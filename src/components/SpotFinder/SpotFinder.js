@@ -94,9 +94,10 @@ const SpotFinder = ({ user }) => {
         lastMessageSender: 'system'
       });
 
-      // Add initial system message
-      // Note: We'll need to get the conversation ID to add the message
-      // For now, this creates the conversation - we can enhance this later
+      // Redirect to Messages page after successful reservation
+      setTimeout(() => {
+        navigate('/messages');
+      }, 1500);
       
     } catch (error) {
       console.error('Error reserving spot:', error);

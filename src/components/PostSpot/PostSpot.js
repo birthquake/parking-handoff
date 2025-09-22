@@ -19,6 +19,9 @@ const PostSpot = ({ user }) => {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [userLocation, setUserLocation] = useState(null);
+  const [locationVerifying, setLocationVerifying] = useState(false);
+  const [locationVerified, setLocationVerified] = useState(false);
+  const [gpsError, setGpsError] = useState('');
 
   // Get user's current location
   useEffect(() => {
@@ -29,6 +32,141 @@ const PostSpot = ({ user }) => {
     }
   }, []);
 
+  // Calculate distance between two coordinates using Haversine formula
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = lat1 * Math.PI/180;
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lon2-lon1) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c; // Distance in meters
+  };
+
+  // Geocode address using a free geocoding service
+  const geocodeAddress = async (address, city) => {
+    try {
+      const fullAddress = `${address}, ${city}`;
+      const encodedAddress = encodeURIComponent(fullAddress);
+      
+      // Using Nominatim (OpenStreetMap) - free geocoding service
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Geocoding service unavailable');
+      }
+      
+      const data = await response.json();
+      
+      if (data.length === 0) {
+        throw new Error('Address not found. Please check the address and try again.');
+      }
+      
+      return {
+        lat: parseFloat(data[0].lat),
+        lng: parseFloat(data[0].lon)
+      };
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      throw new Error('Could not verify address location. Please check the address.');
+    }
+  };
+
+  // Get user's current GPS location
+  const getCurrentLocation = () => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation is not supported by this browser'));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              reject(new Error('Location access denied. Please enable location services and try again.'));
+              break;
+            case error.POSITION_UNAVAILABLE:
+              reject(new Error('Location information is unavailable.'));
+              break;
+            case error.TIMEOUT:
+              reject(new Error('Location request timed out.'));
+              break;
+            default:
+              reject(new Error('An unknown error occurred while getting location.'));
+              break;
+          }
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // 5 minutes
+        }
+      );
+    });
+  };
+
+  // Verify user is at the posted location
+  const verifyLocation = async () => {
+    if (!formData.address.trim() || !formData.city.trim()) {
+      setGpsError('Please enter address and city first');
+      return;
+    }
+
+    setLocationVerifying(true);
+    setGpsError('');
+    setLocationVerified(false);
+
+    try {
+      // Get current GPS location
+      const currentLocation = await getCurrentLocation();
+      
+      // Geocode the entered address
+      const addressLocation = await geocodeAddress(formData.address, formData.city);
+      
+      // Calculate distance between user and address
+      const distance = calculateDistance(
+        currentLocation.lat,
+        currentLocation.lng,
+        addressLocation.lat,
+        addressLocation.lng
+      );
+
+      console.log(`Distance to address: ${distance.toFixed(1)} meters`);
+
+      // Allow up to 200 feet (61 meters) tolerance
+      const MAX_DISTANCE = 61; // 200 feet in meters
+      
+      if (distance <= MAX_DISTANCE) {
+        setLocationVerified(true);
+        setUserLocation(addressLocation); // Store the verified address location
+        setGpsError('');
+      } else {
+        setLocationVerified(false);
+        setGpsError(`You must be within 200 feet of the parking spot to post it. You are currently ${Math.round(distance * 3.28)} feet away.`);
+      }
+    } catch (error) {
+      console.error('Location verification error:', error);
+      setGpsError(error.message);
+      setLocationVerified(false);
+    } finally {
+      setLocationVerifying(false);
+    }
+  };
+
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
@@ -36,6 +174,12 @@ const PostSpot = ({ user }) => {
     });
     if (error) setError('');
     if (success) setSuccess('');
+    
+    // Reset location verification if address changes
+    if (e.target.name === 'address' || e.target.name === 'city') {
+      setLocationVerified(false);
+      setGpsError('');
+    }
   };
 
   const validateForm = () => {
@@ -45,6 +189,10 @@ const PostSpot = ({ user }) => {
     }
     if (!formData.city.trim()) {
       setError('City is required');
+      return false;
+    }
+    if (!locationVerified) {
+      setError('Please verify your location before posting');
       return false;
     }
     if (!formData.price || parseFloat(formData.price) < APP_CONSTANTS.MIN_PRICE) {
@@ -106,8 +254,9 @@ const PostSpot = ({ user }) => {
         ownerId: user.uid,
         ownerEmail: user.email,
         
-        // Location (approximate for now, we'll add maps later)
-        location: userLocation || { lat: 37.7749, lng: -122.4194 }, // Default to SF
+        // Verified location
+        location: userLocation,
+        locationVerified: true,
         
         // Status
         status: 'available', // available, reserved, completed, cancelled
@@ -134,6 +283,7 @@ const PostSpot = ({ user }) => {
         spotType: 'street',
         duration: '30'
       });
+      setLocationVerified(false);
 
       // Redirect to dashboard after 2 seconds
       setTimeout(() => {
@@ -220,6 +370,51 @@ const PostSpot = ({ user }) => {
                   placeholder="San Francisco"
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />
+              </div>
+
+              {/* GPS Verification */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <h4 className="text-sm font-medium text-blue-800">
+                      Location Verification Required
+                    </h4>
+                    <p className="mt-1 text-sm text-blue-700">
+                      To prevent fraud, you must be within 200 feet of the parking spot to post it.
+                    </p>
+                    
+                    {/* GPS Error Message */}
+                    {gpsError && (
+                      <div className="mt-2 text-sm text-red-600">
+                        {gpsError}
+                      </div>
+                    )}
+                    
+                    {/* Verification Status */}
+                    {locationVerified && (
+                      <div className="mt-2 flex items-center text-sm text-green-600">
+                        <svg className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Location verified! You can now post this spot.
+                      </div>
+                    )}
+                    
+                    <button
+                      type="button"
+                      onClick={verifyLocation}
+                      disabled={locationVerifying || !formData.address.trim() || !formData.city.trim()}
+                      className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {locationVerifying ? 'Verifying Location...' : 'Verify My Location'}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -327,7 +522,7 @@ const PostSpot = ({ user }) => {
             <div className="pt-4">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !locationVerified}
                 className="w-full bg-blue-600 text-white py-3 px-4 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Posting Spot...' : 'Post Parking Spot'}
